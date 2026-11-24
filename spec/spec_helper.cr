@@ -1,8 +1,6 @@
 require "spec"
 require "../src/chef-auth"
 
-# Reassembles the full signature from the numbered X-Ops-Authorization-N
-# headers, in order.
 def x_ops_signature(headers : HTTP::Headers) : String
   chunks = [] of Tuple(String, String)
   headers.each do |name, values|

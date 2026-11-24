@@ -14,12 +14,6 @@ module Chef
     end
   end
 
-  # Signs HTTP request headers for the Chef Infra API using v1.3
-  # signed-header authentication (the mixlib-authentication wire format).
-  #
-  # The canonical request string is RSA-SHA256 signed and the signature is
-  # split into 60-character chunks across numbered `X-Ops-Authorization-N`
-  # headers, because Chef limits individual header line length.
   class Auth
     API_VERSION    = "1"
     SIGN_VERSION   = "1.3"
@@ -28,13 +22,10 @@ module Chef
     def initialize(@client_name : String, @key : OpenSSL::PKey::RSA)
     end
 
-    # Loads an RSA private key from PEM-encoded content.
     def self.new(client_name : String, key : String)
       new(client_name, OpenSSL::PKey::RSA.new(key))
     end
 
-    # Signs *headers* in place for a request of *method* to the canonical
-    # *path* with *body* as the request body. Returns the same headers.
     def sign!(headers : HTTP::Headers, method, path, body) : HTTP::Headers
       timestamp = Time.utc.to_s("%Y-%m-%dT%H:%M:%SZ")
       content_hash = content_hash(body)
@@ -55,7 +46,6 @@ module Chef
       headers
     end
 
-    # The string that is covered by the RSA signature.
     def canonical_request(method, path, content_hash, timestamp) : String
       [
         "Method:#{method.upcase}",
@@ -68,9 +58,6 @@ module Chef
       ].join("\n")
     end
 
-    # The server normalizes the path before verifying the signature, so the
-    # signed path must match: collapse repeated slashes and strip a trailing
-    # slash (unless the path is just "/").
     def self.canonical_path(p)
       p = p.gsub(/\/+/, "/")
       p.size > 1 ? p.chomp("/") : p
@@ -115,7 +102,6 @@ module Chef
     end
 
     private def perform(method, path, body)
-      # Query string is excluded from the signed path but sent on the request.
       full_path = Auth.canonical_path("#{@uri.path}/#{path}")
       query = nil
       if idx = path.index('?')

@@ -1,8 +1,5 @@
 require "./spec_helper"
 
-# Verifies incoming X-Ops headers like a Chef server would: reassemble the
-# signature from the numbered headers and check it against the canonical
-# request string.
 def verify_request(headers, method, path, body, key) : Bool
   signature = x_ops_signature(headers)
 
