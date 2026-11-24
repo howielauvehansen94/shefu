@@ -1,5 +1,5 @@
 require "spec"
-require "../src/chef-auth"
+require "../src/shefu"
 
 def x_ops_signature(headers : HTTP::Headers) : String
   chunks = [] of Tuple(String, String)

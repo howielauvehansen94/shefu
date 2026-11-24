@@ -5,12 +5,12 @@ require "base64"
 require "openssl"
 require "openssl_ext"
 
-module Chef
+module Shefu
   class Error < Exception
     getter status
 
     def initialize(@status : Int32, body)
-      super("Chef API #{@status}: #{body}")
+      super("Chef Infra API #{@status}: #{body}")
     end
   end
 

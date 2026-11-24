@@ -15,7 +15,7 @@ class TerminalHandler
 end
 
 def make_middleware(&key_provider : String -> OpenSSL::PKey::RSA | String | Nil)
-  middleware = Chef::Auth::Middleware.new(&key_provider)
+  middleware = Shefu::Auth::Middleware.new(&key_provider)
   terminal = TerminalHandler.new
   middleware.next = terminal
   {middleware, terminal}
@@ -23,7 +23,7 @@ end
 
 def signed_headers(auth, method, path, body = "")
   headers = HTTP::Headers.new
-  auth.sign!(headers, method, Chef::Auth.canonical_path(path), body)
+  auth.sign!(headers, method, Shefu::Auth.canonical_path(path), body)
   headers
 end
 
@@ -34,17 +34,17 @@ def run(middleware, request)
   context
 end
 
-describe Chef::Auth::Middleware do
+describe Shefu::Auth::Middleware do
   key = OpenSSL::PKey::RSA.new(2048)
   wrong_key = OpenSSL::PKey::RSA.new(2048)
-  auth = Chef::Auth.new("test-client", key)
+  auth = Shefu::Auth.new("test-client", key)
 
   it "authenticates a valid signed GET request" do
     middleware, terminal = make_middleware { |userid| userid == "test-client" ? key : nil }
     request = HTTP::Request.new("GET", "/organizations/org/nodes", signed_headers(auth, "GET", "/organizations/org/nodes"))
     context = run(middleware, request)
 
-    context.chef_user.should eq("test-client")
+    context.shefu_user.should eq("test-client")
     context.response.status_code.should eq(200)
     terminal.called.should be_true
   end
@@ -56,7 +56,7 @@ describe Chef::Auth::Middleware do
       signed_headers(auth, "POST", "/organizations/org/nodes", body), body)
     context = run(middleware, request)
 
-    context.chef_user.should eq("test-client")
+    context.shefu_user.should eq("test-client")
     terminal.body.should eq(body)
   end
 
@@ -65,12 +65,12 @@ describe Chef::Auth::Middleware do
     context = run(middleware, HTTP::Request.new("GET", "/nodes"))
 
     context.response.status_code.should eq(401)
-    context.chef_user.should be_nil
+    context.shefu_user.should be_nil
     terminal.called.should be_false
   end
 
   it "rejects a signature made with the wrong key" do
-    other_auth = Chef::Auth.new("test-client", wrong_key)
+    other_auth = Shefu::Auth.new("test-client", wrong_key)
     middleware, terminal = make_middleware { |userid| key }
     request = HTTP::Request.new("GET", "/organizations/org/nodes",
       signed_headers(other_auth, "GET", "/organizations/org/nodes"))
@@ -118,7 +118,7 @@ describe Chef::Auth::Middleware do
     }
 
     context = run(middleware, HTTP::Request.new("GET", "/organizations/org/nodes", headers))
-    context.chef_user.should eq("test-client")
+    context.shefu_user.should eq("test-client")
     terminal.called.should be_true
   end
 
@@ -138,7 +138,7 @@ describe Chef::Auth::Middleware do
       signed_headers(auth, "GET", "/organizations/org/nodes"))
     context = run(middleware, request)
 
-    context.chef_user.should eq("test-client")
+    context.shefu_user.should eq("test-client")
     terminal.called.should be_true
   end
 
@@ -180,7 +180,7 @@ describe Chef::Auth::Middleware do
     end
     context = run(middleware, HTTP::Request.new("GET", "/organizations/org/nodes", downcased))
 
-    context.chef_user.should eq("test-client")
+    context.shefu_user.should eq("test-client")
     terminal.called.should be_true
   end
 
@@ -205,19 +205,19 @@ describe Chef::Auth::Middleware do
     blocked.response.status_code.should eq(401)
   end
 
-  it "round-trips with Chef::Client over a real socket" do
+  it "round-trips with Shefu::Client over a real socket" do
     server = HTTP::Server.new([
-      Chef::Auth::Middleware.new { |userid| userid == "integration-client" ? key : nil },
+      Shefu::Auth::Middleware.new { |userid| userid == "integration-client" ? key : nil },
     ]) do |context|
       context.response.headers["Content-Type"] = "application/json"
-      context.response.print %({"user":#{context.chef_user.to_json},"ok":true})
+      context.response.print %({"user":#{context.shefu_user.to_json},"ok":true})
     end
 
     address = server.bind_unused_port
     spawn { server.listen }
 
     key_file = File.tempfile("chef_key") { |f| f.print(key.to_pem) }
-    client = Chef::Client.new("http://#{address}", "integration-client", key_file.path)
+    client = Shefu::Client.new("http://#{address}", "integration-client", key_file.path)
 
     begin
       result = client.get("/organizations/org/nodes/web")
@@ -226,8 +226,8 @@ describe Chef::Auth::Middleware do
 
       key_file2 = File.tempfile("chef_key") { |f| f.print(wrong_key.to_pem) }
       begin
-        bad_client = Chef::Client.new("http://#{address}", "integration-client", key_file2.path)
-        expect_raises(Chef::Error, "401") do
+        bad_client = Shefu::Client.new("http://#{address}", "integration-client", key_file2.path)
+        expect_raises(Shefu::Error, "401") do
           bad_client.get("/organizations/org/nodes/web")
         end
       ensure

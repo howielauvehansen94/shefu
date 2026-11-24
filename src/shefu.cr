@@ -1,2 +1,2 @@
-require "./chef-api"
+require "./api"
 require "./middleware"

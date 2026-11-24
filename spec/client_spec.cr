@@ -16,7 +16,7 @@ def verify_request(headers, method, path, body, key) : Bool
   key.verify(OpenSSL::Digest.new("SHA256"), Base64.decode(signature), canonical)
 end
 
-describe Chef::Client do
+describe Shefu::Client do
   key = OpenSSL::PKey::RSA.new(2048)
 
   it "sends valid signed requests" do
@@ -33,7 +33,7 @@ describe Chef::Client do
     spawn { server.listen }
 
     key_file = File.tempfile("chef_key") { |f| f.print(key.to_pem) }
-    client = Chef::Client.new("http://#{address}", "integration-client", key_file.path)
+    client = Shefu::Client.new("http://#{address}", "integration-client", key_file.path)
 
     begin
       result = client.get("/nodes/web")
@@ -59,7 +59,7 @@ describe Chef::Client do
     spawn { server.listen }
 
     key_file = File.tempfile("chef_key") { |f| f.print(key.to_pem) }
-    client = Chef::Client.new("http://#{address}/organizations/myorg", "integration-client", key_file.path)
+    client = Shefu::Client.new("http://#{address}/organizations/myorg", "integration-client", key_file.path)
 
     begin
       client.get("/nodes?name=web")
@@ -73,7 +73,7 @@ describe Chef::Client do
     end
   end
 
-  it "raises Chef::Error on non-2xx responses" do
+  it "raises Shefu::Error on non-2xx responses" do
     server = HTTP::Server.new do |context|
       context.response.status = :not_found
       context.response.print "not found"
@@ -83,10 +83,10 @@ describe Chef::Client do
     spawn { server.listen }
 
     key_file = File.tempfile("chef_key") { |f| f.print(key.to_pem) }
-    client = Chef::Client.new("http://#{address}", "integration-client", key_file.path)
+    client = Shefu::Client.new("http://#{address}", "integration-client", key_file.path)
 
     begin
-      expect_raises(Chef::Error, "404") do
+      expect_raises(Shefu::Error, "404") do
         client.get("/nodes/missing")
       end
     ensure

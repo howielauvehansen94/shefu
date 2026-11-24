@@ -1,11 +1,11 @@
 require "http/server"
-require "./chef-api"
+require "./api"
 
 class HTTP::Server::Context
-  property chef_user : String?
+  property shefu_user : String?
 end
 
-module Chef
+module Shefu
   class Auth
     class Middleware
       include HTTP::Handler
@@ -65,7 +65,7 @@ module Chef
           return reject(context, "invalid signature")
         end
 
-        context.chef_user = userid
+        context.shefu_user = userid
         call_next(context)
       end
 

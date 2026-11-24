@@ -1,11 +1,12 @@
-name: chef-auth
+name: shefu
 version: 0.1.1
 
 authors:
   - Håvard Lauve Hansen <h.l.h@posteo.no>
 
 description: |
-  Chef Infra API v1.3 signed-header authentication and API client for Crystal.
+  Crystal re-implementation of Chef Infra server authentication: API v1.3
+  signed-header authentication and API client.
 
 dependencies:
   openssl_ext:

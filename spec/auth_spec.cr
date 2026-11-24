@@ -1,20 +1,20 @@
 require "./spec_helper"
 
-describe Chef::Auth do
+describe Shefu::Auth do
   key = OpenSSL::PKey::RSA.new(2048)
-  auth = Chef::Auth.new("test-client", key)
+  auth = Shefu::Auth.new("test-client", key)
 
   describe ".canonical_path" do
     it "collapses repeated slashes" do
-      Chef::Auth.canonical_path("/organizations//org//nodes").should eq("/organizations/org/nodes")
+      Shefu::Auth.canonical_path("/organizations//org//nodes").should eq("/organizations/org/nodes")
     end
 
     it "strips a trailing slash" do
-      Chef::Auth.canonical_path("/organizations/org/nodes/").should eq("/organizations/org/nodes")
+      Shefu::Auth.canonical_path("/organizations/org/nodes/").should eq("/organizations/org/nodes")
     end
 
     it "keeps a bare root path" do
-      Chef::Auth.canonical_path("/").should eq("/")
+      Shefu::Auth.canonical_path("/").should eq("/")
     end
   end
 
@@ -55,7 +55,7 @@ describe Chef::Auth do
   end
 
   it "loads a key from PEM content" do
-    from_pem = Chef::Auth.new("test-client", key.to_pem)
+    from_pem = Shefu::Auth.new("test-client", key.to_pem)
     headers = from_pem.sign!(HTTP::Headers.new, "GET", "/nodes", "")
     headers["X-Ops-Userid"].should eq("test-client")
   end
